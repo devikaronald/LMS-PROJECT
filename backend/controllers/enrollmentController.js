@@ -35,7 +35,10 @@ const enrollCourse = async (req, res) => {
 
 const getMyCourses = async (req, res) => {
   try {
-    const enrollments = await Enrollment.find({ userId: req.user.id }).populate("courseId").sort({ enrolledAt: -1 });
+    const enrollments = await Enrollment.find({ userId: req.user.id })
+      .populate({ path: "courseId", populate: { path: "instructorId", select: "name email" } })
+      .sort({ enrolledAt: -1 });
+
     res.status(200).json(enrollments);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -61,12 +64,13 @@ const updateProgress = async (req, res) => {
       { upsert: true, new: true }
     );
 
+    const lessonIdString = lessonId.toString();
     if (completed) {
-      if (!enrollment.completedLessons.includes(lessonId)) {
+      if (!enrollment.completedLessons.some((id) => id.toString() === lessonIdString)) {
         enrollment.completedLessons.push(lessonId);
       }
     } else {
-      enrollment.completedLessons = enrollment.completedLessons.filter((id) => id.toString() !== lessonId);
+      enrollment.completedLessons = enrollment.completedLessons.filter((id) => id.toString() !== lessonIdString);
     }
 
     const totalLessons = await Lesson.countDocuments({ courseId });

@@ -6,16 +6,21 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
     try {
       await login(email, password);
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -30,7 +35,7 @@ const Login = () => {
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
           <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Email address" className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3" />
           <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="Password" className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3" />
-          <button className="w-full rounded-2xl bg-cyan-500 px-4 py-3 font-semibold text-slate-950">Login</button>
+          <button disabled={loading} className="w-full rounded-2xl bg-cyan-500 px-4 py-3 font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-70">{loading ? 'Signing in...' : 'Login'}</button>
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-400">

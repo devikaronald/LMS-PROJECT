@@ -1,29 +1,53 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import api from '../services/api';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const CourseDetail = () => {
   const { id } = useParams();
   const [course, setCourse] = useState(null);
   const [lessons, setLessons] = useState([]);
   const [isEnrolled, setIsEnrolled] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [updatingLesson, setUpdatingLesson] = useState('');
 
   useEffect(() => {
     const loadCourse = async () => {
+      setLoading(true);
       const response = await api.get(`/courses/${id}`);
       setCourse(response.data.course);
       setLessons(response.data.lessons || []);
       setIsEnrolled(response.data.isEnrolled);
+      setLoading(false);
     };
 
     loadCourse();
   }, [id]);
 
   const handleEnroll = async () => {
-    await api.post('/enroll', { courseId: id });
-    setIsEnrolled(true);
+    try {
+      await api.post('/enroll', { courseId: id });
+      setIsEnrolled(true);
+      toast.success('You are now enrolled in this course');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Unable to enroll right now');
+    }
   };
 
+  const handleLessonProgress = async (lessonId, completed) => {
+    try {
+      setUpdatingLesson(lessonId);
+      await api.put('/enroll/progress', { courseId: id, lessonId, completed });
+      toast.success(completed ? 'Lesson marked complete' : 'Lesson marked incomplete');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Unable to update lesson progress');
+    } finally {
+      setUpdatingLesson('');
+    }
+  };
+
+  if (loading) return <LoadingSpinner />;
   if (!course) return <div className="text-slate-300">Loading course...</div>;
 
   return (
@@ -45,9 +69,18 @@ const CourseDetail = () => {
         <div className="mt-4 space-y-3">
           {lessons.map((lesson) => (
             <div key={lesson._id} className="rounded-2xl border border-slate-800 bg-slate-950/80 p-4">
-              <p className="font-medium">{lesson.title}</p>
-              <p className="mt-1 text-sm text-slate-400">{lesson.description}</p>
-              <p className="mt-2 text-sm text-cyan-400">Duration: {lesson.duration}</p>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-medium">{lesson.title}</p>
+                  <p className="mt-1 text-sm text-slate-400">{lesson.description}</p>
+                  <p className="mt-2 text-sm text-cyan-400">Duration: {lesson.duration}</p>
+                </div>
+                {isEnrolled ? (
+                  <button disabled={updatingLesson === lesson._id} onClick={() => handleLessonProgress(lesson._id, true)} className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-sm text-cyan-300 disabled:cursor-not-allowed disabled:opacity-60">
+                    {updatingLesson === lesson._id ? 'Updating...' : 'Mark complete'}
+                  </button>
+                ) : null}
+              </div>
             </div>
           ))}
         </div>

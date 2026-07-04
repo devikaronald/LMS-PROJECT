@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
+import LoadingSpinner from './components/LoadingSpinner';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -16,8 +17,17 @@ import NotFound from './pages/NotFound';
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-100">Loading...</div>;
+  if (loading) return <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-100"><LoadingSpinner /></div>;
   if (!user) return <Navigate to="/login" replace />;
+  return children;
+};
+
+const RoleRoute = ({ children, allowedRoles }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) return <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-100"><LoadingSpinner /></div>;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!allowedRoles.includes(user.role)) return <Navigate to="/dashboard" replace />;
   return children;
 };
 
@@ -30,7 +40,7 @@ const AppRoutes = () => {
         <Route path="/register" element={<Register />} />
         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/instructor-dashboard" element={<InstructorDashboard />} />
+          <Route path="/instructor-dashboard" element={<RoleRoute allowedRoles={['instructor', 'admin']}><InstructorDashboard /></RoleRoute>} />
           <Route path="/courses" element={<Courses />} />
           <Route path="/courses/:id" element={<CourseDetail />} />
           <Route path="/my-learning" element={<MyLearning />} />

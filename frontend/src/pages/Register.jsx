@@ -8,16 +8,21 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('student');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
     try {
       await register(name, email, password, role);
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -37,7 +42,7 @@ const Register = () => {
             <option value="student">Student</option>
             <option value="instructor">Instructor</option>
           </select>
-          <button className="w-full rounded-2xl bg-cyan-500 px-4 py-3 font-semibold text-slate-950">Create Account</button>
+          <button disabled={loading} className="w-full rounded-2xl bg-cyan-500 px-4 py-3 font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-70">{loading ? 'Creating account...' : 'Create Account'}</button>
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-400">
